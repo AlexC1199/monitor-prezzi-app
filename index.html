@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monitor prezzi</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icona.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icona-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--sf:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#5d6675;--br:#e3e6eb;--ac:#0f766e;--ac2:#0d9488;--gi:#15803d;--su:#b91c1c;--wa:#b45309;--r:14px}
+@media (prefers-color-scheme:dark){:root{--sf:#0e1116;--card:#171b22;--tx:#e8ebf0;--mu:#97a0ae;--br:#2a313c;--ac:#2dd4bf;--ac2:#14b8a6;--gi:#4ade80;--su:#f87171;--wa:#fbbf24}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--sf);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+a{color:var(--ac)}
+header{position:sticky;top:0;z-index:5;background:var(--sf);padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--br)}
+header h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
+#stato-pc{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:6px}
+.pallino{width:8px;height:8px;border-radius:50%;background:var(--mu);display:inline-block}
+.pallino.ok{background:var(--gi)}.pallino.ko{background:var(--su)}
+main{max-width:860px;margin:0 auto;padding:14px 14px calc(90px + env(safe-area-inset-bottom))}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:5;background:var(--card);border-top:1px solid var(--br);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--mu);padding:9px 0 10px;font:inherit;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+nav button .ic{font-size:20px;line-height:1}
+nav button.att{color:var(--ac);font-weight:600}
+@media (min-width:900px){nav{position:sticky;top:57px;bottom:auto;max-width:860px;margin:0 auto;border:1px solid var(--br);border-radius:var(--r);margin-top:12px}main{padding-bottom:40px}}
+.card{background:var(--card);border:1px solid var(--br);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.riga{display:flex;align-items:center;gap:10px}
+.cresci{flex:1;min-width:0}
+.mu{color:var(--mu)}.pic{font-size:13px}
+.tit{font-weight:600;font-size:16px;margin:0 0 2px;overflow-wrap:anywhere}
+.prezzo{font-variant-numeric:tabular-nums;font-weight:650;white-space:nowrap}
+.giu{color:var(--gi)}.su{color:var(--su)}.avv{color:var(--wa)}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:99px;border:1px solid var(--br);color:var(--mu);margin:2px 4px 2px 0;white-space:nowrap}
+.badge.ok{color:var(--gi);border-color:currentColor}.badge.ko{color:var(--su);border-color:currentColor}.badge.wa{color:var(--wa);border-color:currentColor}
+button.btn,a.btn{appearance:none;border:1px solid var(--br);background:var(--card);color:var(--tx);border-radius:10px;padding:9px 14px;font:inherit;font-weight:550;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:40px}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+@media (prefers-color-scheme:dark){button.pri{color:#04201d}}
+button.peric{color:var(--su)}
+button:disabled{opacity:.55;cursor:default}
+input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:10px 11px;min-height:42px}
+textarea{min-height:70px;resize:vertical}
+label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
+.griglia2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chk{display:flex;flex-wrap:wrap;gap:8px}.chk label{display:flex;align-items:center;gap:6px;margin:0;color:var(--tx);font-size:14px;border:1px solid var(--br);border-radius:10px;padding:7px 10px}
+.chk input{width:auto;min-height:0}
+.lista-ann{list-style:none;margin:8px 0 0;padding:0}
+.lista-ann li{display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--br)}
+.lista-ann img{width:44px;height:44px;object-fit:cover;border-radius:8px;background:var(--sf);flex:none}
+.lista-ann a.t{text-decoration:none;color:var(--tx)}.lista-ann a.t:hover{text-decoration:underline}.lista-ann .t{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:14px}
+.vuoto{text-align:center;color:var(--mu);padding:34px 10px}
+.cerca-box{display:flex;gap:8px}.cerca-box input{flex:1}
+.spin{width:16px;height:16px;border:2px solid var(--br);border-top-color:var(--ac);border-radius:50%;animation:g 1s linear infinite;display:inline-block;vertical-align:-3px}
+@keyframes g{to{transform:rotate(360deg)}}
+.avviso{padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--wa) 12%,transparent);color:var(--tx);font-size:14px;margin-bottom:12px}
+.errore{background:color-mix(in srgb,var(--su) 12%,transparent)}
+svg.grafico{width:100%;height:auto;max-height:230px;display:block}
+.tabs-siti{display:flex;gap:6px;overflow-x:auto;margin:8px 0}
+.tabs-siti button{white-space:nowrap}
+.tabs-siti button.att{border-color:var(--ac);color:var(--ac)}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.stat div{background:var(--sf);border-radius:10px;padding:8px 10px}.stat b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--mu)}
+dialog{border:0;border-radius:18px;padding:0;width:min(560px,100vw - 20px);max-height:calc(100vh - 40px);background:var(--card);color:var(--tx)}
+dialog::backdrop{background:#0008}
+dialog .corpo{padding:18px;overflow:auto;max-height:calc(100vh - 120px)}
+dialog .piede{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--br)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));background:var(--tx);color:var(--card);padding:10px 16px;border-radius:12px;z-index:50;max-width:90vw;font-size:14px}
+.nascosto{display:none!important}
+.carte{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.carte label{flex:none;width:118px;border:1px solid var(--br);border-radius:10px;padding:6px;margin:0;font-size:12px;color:var(--tx);cursor:pointer}
+.carte img{width:100%;border-radius:6px;aspect-ratio:5/7;object-fit:cover;background:var(--sf)}
+.carte input{width:auto;min-height:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>📉 Monitor prezzi</h1>
+  <div id="stato-pc" title="Stato dei computer che fanno i controlli"></div>
+</header>
+<nav id="nav" class="nascosto">
+  <button data-v="seguiti" class="att"><span class="ic">⭐</span>Seguiti</button>
+  <button data-v="cerca"><span class="ic">🔍</span>Cerca</button>
+  <button data-v="avvisi"><span class="ic">🔔</span>Avvisi</button>
+  <button data-v="impostazioni"><span class="ic">⚙️</span>Impostazioni</button>
+</nav>
+<main id="main"><div class="vuoto"><span class="spin"></span></div></main>
+<dialog id="dlg"><div class="corpo" id="dlg-corpo"></div><div class="piede" id="dlg-piede"></div></dialog>
+
+<script>
+"use strict";
+// ======================================================================
+// Impostazioni dell'app
+// ======================================================================
+const API = "https://api.github.com";
+const SITI = {cardtrader:"CardTrader", cardmarket:"Cardmarket", vinted:"Vinted", amazon:"Amazon"};
+const ORDINE = ["cardtrader","cardmarket","vinted","amazon"];
+const ESCLUSE_PREDEFINITE = ["vuota","vuoto","solo scatola","proxy","replica","fake","falso","cover","custodia","skin","ricambi","non funzionante","guasto","rotto","per pezzi","cerco","compro"];
+
+// ======================================================================
+// Memoria del dispositivo (protetta: in alcuni contesti localStorage non c'è)
+// ======================================================================
+const mem = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k) }catch(e){} },
+};
+let accesso = { token: mem.get("mp_token"), progetto: mem.get("mp_progetto") };
+
+// ======================================================================
+// Utilità
+// ======================================================================
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// Solo link http/https: un link "javascript:" in un annuncio non deve poter eseguire codice.
+const url = u => { try{ const x = new URL(String(u || ""), location.href); return /^https?:$/.test(x.protocol) ? esc(x.href) : "#"; }catch(e){ return "#"; } };
+const euro = v => v == null || isNaN(v) ? "—" : Number(v).toLocaleString("it-IT",{style:"currency",currency:"EUR"});
+const pct = v => v == null ? "" : (v>0?"+":"") + v.toFixed(0) + "%";
+function tempoFa(iso){
+  if(!iso) return "mai";
+  const s = (Date.now() - new Date(iso).getTime())/1000;
+  if(isNaN(s)) return "—";
+  if(s < 60) return "ora";
+  if(s < 3600) return Math.round(s/60) + " min fa";
+  if(s < 86400) return Math.round(s/3600) + " h fa";
+  return Math.round(s/86400) + " g fa";
+}
+function toast(t, ms=3200){ const d=document.createElement("div"); d.className="toast"; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(), ms); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const b64enc = s => btoa(unescape(encodeURIComponent(s)));
+const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\n/g,""))));
+function idProdotto(nome){ return (nome.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40) || "prodotto") + "-" + Math.random().toString(36).slice(2,6); }
+
+// ======================================================================
+// GitHub: lettura e scrittura dei file del progetto privato
+// ======================================================================
+class ErroreGH extends Error {}
+async function gh(percorso, opz={}){
+  let r;
+  try{
+    r = await fetch(API + "/repos/" + accesso.progetto + "/" + percorso, {
+      cache: "no-store", ...opz,
+      headers: {"Authorization": "Bearer " + accesso.token, "Accept": "application/vnd.github+json", ...(opz.headers||{})},
+    });
+  }catch(e){ throw new ErroreGH("Connessione assente o GitHub non raggiungibile.") }
+  if(r.status === 401) throw new ErroreGH("Chiave GitHub non valida o scaduta.");
+  if(r.status === 403 && r.headers.get("x-ratelimit-remaining") === "0") throw new ErroreGH("Troppe richieste a GitHub: riprova tra qualche minuto.");
+  return r;
+}
+async function leggi(percorso, predef=null){
+  const r = await gh("contents/" + percorso);
+  if(r.status === 404) return {dati: predef, sha: null};
+  if(!r.ok) throw new ErroreGH("Lettura di " + percorso + " non riuscita (" + r.status + ").");
+  const j = await r.json();
+  let dati = predef;
+  try{
+    if(j.content) dati = JSON.parse(b64dec(j.content));
+    else { // file grandi (oltre 1 MB): GitHub non include il contenuto, si scarica a parte
+      const raw = await gh("contents/" + percorso, {headers:{Accept:"application/vnd.github.raw+json"}});
+      if(!raw.ok) throw new Error("download");
+      dati = await raw.json();
+    }
+  }catch(e){
+    // Mai sostituire un file esistente con i valori predefiniti: si cancellerebbero i dati.
+    throw new ErroreGH("Il file " + percorso + " non è leggibile: non lo modifico. Controllalo su GitHub.");
+  }
+  return {dati, sha: j.sha};
+}
+async function elenca(cartella){
+  const r = await gh("contents/" + cartella);
+  if(r.status === 404) return [];
+  if(!r.ok) throw new ErroreGH("Lettura della cartella non riuscita.");
+  return (await r.json()).map(x => x.name);
+}
+// Scrive un file. `modifica` riceve i dati attuali e restituisce quelli nuovi:
+// se nel frattempo il file è cambiato (l'altro dispositivo o il PC), si rilegge e si riapplica.
+async function aggiorna(percorso, predef, modifica, messaggio){
+  for(let t=0; t<4; t++){
+    const {dati, sha} = await leggi(percorso, predef);
+    const nuovi = modifica(structuredClone(dati ?? predef));
+    const corpo = {message: messaggio || ("app: " + percorso), content: b64enc(JSON.stringify(nuovi, null, 1))};
+    if(sha) corpo.sha = sha;
+    const r = await gh("contents/" + percorso, {method:"PUT", body: JSON.stringify(corpo), headers:{"Content-Type":"application/json"}});
+    if(r.ok) return nuovi;
+    if(r.status !== 409 && r.status !== 422) throw new ErroreGH("Salvataggio non riuscito (" + r.status + ").");
+    await sleep(700 * (t+1));
+  }
+  throw new ErroreGH("Il file è cambiato più volte mentre salvavo: riprova.");
+}
+async function nuovaRichiesta(corpo){
+  const nome = Date.now() + "_" + Math.random().toString(36).slice(2,8) + ".json";
+  const r = await gh("contents/dati/richieste/" + nome, {method:"PUT", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({message:"app: richiesta", content: b64enc(JSON.stringify({...corpo, creata: new Date().toISOString()}))})});
+  if(!r.ok) throw new ErroreGH("Invio della richiesta non riuscito (" + r.status + ").");
+  return nome;
+}
+async function attendiRisultato(nome, onTick, maxSec=300){
+  const inizio = Date.now();
+  while((Date.now()-inizio)/1000 < maxSec){
+    await sleep(5000);
+    onTick && onTick(Math.round((Date.now()-inizio)/1000));
+    const {dati} = await leggi("dati/risultati/" + nome, null);
+    if(dati) return dati;
+  }
+  return null;
+}
+
+// ======================================================================
+// Stato in memoria
+// ======================================================================
+let S = { prodotti: [], stati: {}, generale: {}, eventi: [], vista: "seguiti", ricerca: null };
+
+async function caricaTutto(){
+  const [p, g] = await Promise.all([leggi("dati/prodotti.json", {prodotti:[]}), leggi("dati/stato.json", {})]);
+  S.prodotti = (p.dati && p.dati.prodotti) || [];
+  S.generale = g.dati || {};
+  const stati = await Promise.all(S.prodotti.map(x => leggi("dati/stato/" + x.id + ".json", null).then(r => [x.id, r.dati]).catch(() => [x.id, null])));
+  S.stati = Object.fromEntries(stati);
+  disegnaStatoPC();
+}
+
+function disegnaStatoPC(){
+  const t = (S.generale.turno) || {};
+  const eta = t.battito ? (Date.now() - new Date(t.battito).getTime())/60000 : Infinity;
+  const ok = eta < 15;
+  $("#stato-pc").innerHTML = '<span class="pallino ' + (ok ? "ok" : "ko") + '"></span>' +
+    (ok ? esc(t.pc) + " attivo" : (t.pc ? "nessun PC attivo" : "in attesa del PC"));
+}
+
+// ======================================================================
+// Calcoli per la visualizzazione
+// ======================================================================
+function mediaRobusta(prezzi){
+  const v = prezzi.filter(p => p > 0).sort((a,b)=>a-b);
+  if(!v.length) return null;
+  const med = v[Math.floor((v.length-1)/2)] / 2 + v[Math.ceil((v.length-1)/2)] / 2;
+  let t = v.filter(p => p >= med/3 && p <= med*3);
+  if(t.length >= 4){
+    const q = (a,f) => { const i=(a.length-1)*f, lo=Math.floor(i), hi=Math.ceil(i); return a[lo] + (a[hi]-a[lo])*(i-lo); };
+    const q1=q(t,.25), q3=q(t,.75), iqr=q3-q1;
+    const f = t.filter(p => p >= q1-1.5*iqr && p <= q3+1.5*iqr); if(f.length) t = f;
+  }
+  return {media: t.reduce((a,b)=>a+b,0)/t.length, n: t.length};
+}
+function riepilogo(id){
+  const st = S.stati[id];
+  if(!st) return {attivi: [], media: null, minimo: null};
+  const limite = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  const annunci = Object.values(st.annunci || {});
+  const attivi = annunci.filter(a => a.attivo).sort((a,b) => a.prezzo - b.prezzo);
+  const media = mediaRobusta(annunci.filter(a => (a.ultima_vista||"") >= limite).map(a => a.prezzo));
+  return {attivi, media, minimo: attivi[0] || null, medie: st.medie || []};
+}
+
+// ======================================================================
+// Viste
+// ======================================================================
+function vai(v){
+  S.vista = v;
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("att", b.dataset.v === v));
+  ({seguiti: vistaSeguiti, cerca: vistaCerca, avvisi: vistaAvvisi, impostazioni: vistaImpostazioni}[v])();
+  window.scrollTo(0,0);
+}
+
+function bannerSiti(){
+  const siti = S.generale.siti || {};
+  const male = Object.entries(siti).filter(([s,e]) => e.esito !== "ok");
+  let h = "";
+  const t = S.generale.turno || {};
+  const eta = t.battito ? (Date.now() - new Date(t.battito).getTime())/60000 : Infinity;
+  if(S.prodotti.length && eta >= 15) h += '<div class="avviso errore">⚠️ Nessun computer sta facendo i controlli' + (t.battito ? " dall'ultima volta " + tempoFa(t.battito) : "") + '. Accendi il fisso o il portatile.</div>';
+  if(male.length) h += '<div class="avviso">' + male.map(([s,e]) => "<b>" + esc(SITI[s]||s) + "</b>: " + (e.esito === "bloccato" ? "bloccato" : "errore") + " all'ultimo controllo (" + esc(e.messaggio) + ")" + (e.ultimo_ok ? ", ultimo successo " + tempoFa(e.ultimo_ok) : "")).join("<br>") + "</div>";
+  return h;
+}
+
+function vistaSeguiti(){
+  const m = $("#main");
+  if(!S.prodotti.length){
+    m.innerHTML = bannerSiti() + '<div class="card vuoto"><p style="font-size:34px;margin:0">⭐</p><p><b>Non segui ancora nessun prodotto.</b></p><p>Cercalo nella scheda <b>Cerca</b> e premi «Segui».</p><button class="btn pri" onclick="vai(\'cerca\')">🔍 Cerca un prodotto</button></div>';
+    return;
+  }
+  const ultimo = S.generale.ultimo_giro;
+  let h = bannerSiti() + '<div class="riga pic mu" style="margin:0 2px 10px"><span class="cresci">Ultimo controllo: ' + tempoFa(ultimo) + (S.generale.ultimo_giro_pc ? " (" + esc(S.generale.ultimo_giro_pc) + ")" : "") + '</span><button class="btn" id="btn-ora">🔄 Controlla ora</button></div>';
+  for(const p of S.prodotti){
+    const r = riepilogo(p.id);
+    const siti = (p.siti || ORDINE).map(s => '<span class="badge">' + esc(SITI[s]||s) + '</span>').join("");
+    h += '<div class="card" role="button" tabindex="0" style="cursor:pointer" data-p="' + esc(p.id) + '">' +
+      '<div class="riga"><div class="cresci"><p class="tit">' + esc(p.nome) + (p.attivo === false ? ' <span class="badge">in pausa</span>' : "") + '</p>' +
+      '<div class="pic mu">' + (r.attivi.length ? r.attivi.length + " annunci attivi" : (S.stati[p.id] ? "nessun annuncio attivo" : "in attesa del primo controllo")) + '</div></div>' +
+      '<div style="text-align:right"><div class="prezzo">' + (r.minimo ? euro(r.minimo.prezzo) : "—") + '</div><div class="pic mu">media ' + (r.media ? euro(r.media.media) : "—") + '</div></div></div>' +
+      '<div style="margin-top:6px">' + siti + '</div></div>';
+  }
+  m.innerHTML = h;
+  m.querySelectorAll("[data-p]").forEach(el => { el.onclick = () => vistaProdotto(el.dataset.p); el.onkeydown = e => { if(e.key === "Enter") vistaProdotto(el.dataset.p) } });
+  $("#btn-ora").onclick = controllaOra;
+}
+
+async function controllaOra(){
+  const b = $("#btn-ora"); if(b){ b.disabled = true; b.innerHTML = '<span class="spin"></span> In corso…'; }
+  try{
+    const nome = await nuovaRichiesta({tipo:"controllo"});
+    const r = await attendiRisultato(nome, s => { if(b) b.innerHTML = '<span class="spin"></span> ' + s + " s"; }, 900);
+    if(!r) toast("Nessun computer ha risposto: è acceso?");
+    else { toast("Controllo completato"); await caricaTutto(); if(S.vista === "seguiti") vistaSeguiti(); }
+  }catch(e){ toast(e.message) }
+  if(b){ b.disabled = false; b.textContent = "🔄 Controlla ora"; }
+}
+
+function grafico(medie){
+  const pts = (medie || []).slice(-90);
+  if(pts.length < 2) return '<p class="pic mu">Il grafico compare dopo almeno due giorni di controlli.</p>';
+  const W=600, H=200, pad=58, vals = pts.flatMap(p => [p[1], p[2]]).filter(v => v != null);
+  let lo = Math.min(...vals), hi = Math.max(...vals); if(hi === lo){ hi += 1; lo -= 1; }
+  const x = i => pad + i*(W-pad-8)/(pts.length-1), y = v => 10 + (H-34)*(1-(v-lo)/(hi-lo));
+  const linea = k => pts.map((p,i) => p[k] == null ? "" : (i ? "L" : "M") + x(i).toFixed(1) + " " + y(p[k]).toFixed(1)).join(" ").replace(/^ *L/,"M");
+  const gg = d => esc(String(d).slice(8,10) + "/" + String(d).slice(5,7));
+  return '<svg class="grafico" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Andamento della media e del prezzo minimo">' +
+    '<text x="2" y="' + (y(hi)+4) + '" font-size="19" fill="currentColor" opacity=".65">' + Math.round(hi) + '€</text>' +
+    '<text x="2" y="' + (y(lo)+4) + '" font-size="19" fill="currentColor" opacity=".65">' + Math.round(lo) + '€</text>' +
+    '<line x1="' + pad + '" x2="' + W + '" y1="' + y(lo) + '" y2="' + y(lo) + '" stroke="currentColor" opacity=".12"/>' +
+    '<path d="' + linea(1) + '" fill="none" stroke="var(--ac)" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '<path d="' + linea(2) + '" fill="none" stroke="var(--gi)" stroke-width="1.5" stroke-dasharray="4 3"/>' +
+    '<text x="' + pad + '" y="' + (H-4) + '" font-size="19" fill="currentColor" opacity=".65">' + gg(pts[0][0]) + '</text>' +
+    '<text x="' + W + '" y="' + (H-4) + '" font-size="19" fill="currentColor" opacity=".65" text-anchor="end">' + gg(pts[pts.length-1][0]) + '</text></svg>' +
+    '<div class="pic mu"><span style="color:var(--ac)">━</span> media &nbsp; <span style="color:var(--gi)">┅</span> prezzo più basso</div>';
+}
+
+function rigaAnnuncio(a, media){
+  const d = media && a.prezzo ? (a.prezzo - media)/media*100 : null;
+  const ex = a.extra || {};
+  const info = [SITI[a.sito] || a.sito, ex.condizione, ex.lingua, ex.nota].filter(Boolean).map(esc).join(" · ");
+  const cm = ex.media_30g ? " · media 30 gg " + euro(ex.media_30g) : "";
+  return '<li>' + (a.immagine ? '<img loading="lazy" src="' + url(a.immagine) + '" alt="">' : '<img alt="">') +
+    '<div class="cresci"><a class="t" href="' + url(a.url) + '" target="_blank" rel="noopener">' + esc(a.titolo || "(senza titolo)") + '</a>' +
+    '<div class="pic mu">' + info + cm + (ex.commissione ? " · +" + euro(ex.commissione) + " protezione" : "") + '</div></div>' +
+    '<div style="text-align:right"><div class="prezzo">' + euro(a.prezzo) + '</div>' +
+    (ex.prezzo_pieno ? '<div class="pic mu" style="text-decoration:line-through">' + euro(ex.prezzo_pieno) + '</div>' : "") +
+    (d != null && Math.abs(d) >= 1 ? '<div class="pic ' + (d < 0 ? "giu" : "su") + '">' + pct(d) + ' vs media</div>' : "") + '</div></li>';
+}
+
+function vistaProdotto(id){
+  const p = S.prodotti.find(x => x.id === id); if(!p) return vai("seguiti");
+  const r = riepilogo(id), st = S.stati[id] || {};
+  const media = r.media && r.media.media;
+  const ev = S.eventi.filter(e => e.prodotto_id === id).slice(0,5);
+  let filtro = "tutti";
+  const disegnaLista = () => {
+    const lista = r.attivi.filter(a => filtro === "tutti" || a.sito === filtro);
+    $("#lista").innerHTML = lista.length ? lista.map(a => rigaAnnuncio(a, media)).join("") : '<li class="mu">Nessun annuncio attivo.</li>';
+  };
+  const sitiPresenti = [...new Set(r.attivi.map(a => a.sito))];
+  $("#main").innerHTML =
+    '<button class="btn" onclick="vai(\'seguiti\')">← Indietro</button>' +
+    '<div class="card" style="margin-top:10px"><div class="riga"><p class="tit cresci" style="font-size:19px">' + esc(p.nome) + '</p><button class="btn" id="mod">✏️ Modifica</button></div>' +
+    '<div class="stat"><div><span>Più basso ora</span><b>' + (r.minimo ? euro(r.minimo.prezzo) : "—") + '</b></div><div><span>Media 30 gg</span><b>' + (media ? euro(media) : "—") + '</b></div><div><span>Annunci attivi</span><b>' + r.attivi.length + '</b></div></div>' +
+    grafico(r.medie) + '</div>' +
+    (ev.length ? '<div class="card"><b>Ultimi avvisi</b>' + ev.map(e => '<div class="pic" style="margin-top:8px">' + esc(e.testo) + ' <span class="mu">· ' + tempoFa(e.quando) + '</span></div>').join("") + '</div>' : "") +
+    '<div class="card"><b>Annunci attivi</b><div class="tabs-siti">' + ["tutti", ...sitiPresenti].map(s => '<button class="btn' + (s === "tutti" ? " att" : "") + '" data-f="' + esc(s) + '">' + (s === "tutti" ? "Tutti" : esc(SITI[s] || s)) + '</button>').join("") + '</div><ul class="lista-ann" id="lista"></ul></div>';
+  disegnaLista();
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { filtro = b.dataset.f; document.querySelectorAll("[data-f]").forEach(x => x.classList.toggle("att", x === b)); disegnaLista(); });
+  $("#mod").onclick = () => formProdotto(p);
+}
+
+// ---------------------------------------------------------------- Ricerca
+function vistaCerca(){
+  const R = S.ricerca;
+  $("#main").innerHTML =
+    '<div class="card"><form class="cerca-box" id="f-cerca"><input id="q" type="search" enterkeyhint="search" placeholder="Es. Gengar TG06 Origine Perduta" value="' + esc(R ? R.testo : "") + '" required maxlength="120"><button class="btn pri" id="b-cerca">Cerca</button></form>' +
+    '<div class="chk" style="margin-top:10px">' + ORDINE.map(s => '<label><input type="checkbox" name="s" value="' + s + '" checked> ' + SITI[s] + '</label>').join("") + '</div>' +
+    '<p class="pic mu" style="margin:10px 0 0">La ricerca la esegue il tuo computer acceso: di solito serve circa un minuto.</p></div><div id="ris"></div>';
+  $("#f-cerca").onsubmit = async ev => {
+    ev.preventDefault();
+    const testo = $("#q").value.trim(); if(!testo) return;
+    const siti = [...document.querySelectorAll("input[name=s]:checked")].map(x => x.value);
+    if(!siti.length) return toast("Scegli almeno un sito");
+    $("#b-cerca").disabled = true;
+    $("#ris").innerHTML = '<div class="card vuoto"><span class="spin"></span> <span id="att">Invio la ricerca al computer…</span></div>';
+    try{
+      const nome = await nuovaRichiesta({tipo:"ricerca", testo, siti});
+      const r = await attendiRisultato(nome, s => { const a = $("#att"); if(a) a.textContent = "Il computer sta cercando… " + s + " s"; });
+      if(!r){ $("#ris").innerHTML = '<div class="avviso errore">Nessuna risposta dopo 5 minuti. Controlla che il fisso o il portatile siano accesi con il monitor avviato.</div>'; }
+      else { S.ricerca = r; disegnaRisultati(); }
+    }catch(e){ $("#ris").innerHTML = '<div class="avviso errore">' + esc(e.message) + '</div>' }
+    const b = $("#b-cerca"); if(b) b.disabled = false;
+  };
+  if(R) disegnaRisultati();
+}
+
+function disegnaRisultati(){
+  const R = S.ricerca;
+  if(R.errore){ $("#ris").innerHTML = '<div class="avviso errore">' + esc(R.errore) + '</div>'; return; }
+  const media = R.media && R.media.media;
+  const ok = ORDINE.filter(s => R.siti[s] && R.siti[s].stato === "ok" && R.siti[s].trovati);
+  const pert = a => a.pertinente !== false;   // risultati vecchi senza il campo: tutti pertinenti
+  const minimo = ok.flatMap(s => R.siti[s].annunci.filter(pert)).reduce((m, a) => Math.min(m, a.prezzo), Infinity);
+  const altri = ok.reduce((n, s) => n + R.siti[s].annunci.filter(a => !pert(a)).length, 0);
+  let filtro = "tutti", mostraAltri = false;
+  const testoAltri = aperto => aperto ? "Nascondi i risultati non pertinenti" : (altri === 1 ? "Mostra anche l'altro risultato (non pertinente)" : "Mostra anche gli altri " + altri + " risultati (non pertinenti)");
+  let h = '<div class="card"><div class="riga"><div class="cresci"><p class="tit">«' + esc(R.testo) + '»</p><div class="pic mu">Cercato ' + tempoFa(R.completata || R.quando) + '</div></div><button class="btn pri" id="segui">⭐ Segui</button></div>' +
+    '<div class="stat"><div><span>Media</span><b>' + euro(media) + '</b></div><div><span>Prezzi usati</span><b>' + (R.media ? R.media.n : 0) + '</b></div><div><span>Più basso</span><b>' + (isFinite(minimo) ? euro(minimo) : "—") + '</b></div></div>' +
+    '<div>' + ORDINE.filter(s => R.siti[s]).map(s => { const x = R.siti[s];
+      if(x.stato === "ok") { const n = x.pertinenti ?? x.trovati; return '<span class="badge ' + (n ? "ok" : "") + '">' + SITI[s] + ": " + n + (x.media ? " · media " + euro(x.media.media) : "") + '</span>'; }
+      return '<span class="badge ' + (x.stato === "non_configurato" ? "wa" : "ko") + '" title="' + esc(x.messaggio) + '">' + SITI[s] + ": " + ({bloccato:"bloccato", errore:"errore", non_configurato:"da configurare"}[x.stato] || x.stato) + '</span>'; }).join("") + '</div></div>';
+  h += '<div class="card"><div class="tabs-siti">' + ["tutti", ...ok].map(s => '<button class="btn' + (s === "tutti" ? " att" : "") + '" data-r="' + esc(s) + '">' + (s === "tutti" ? "Tutti" : SITI[s]) + '</button>').join("") + '</div>' +
+    (R.obbligatorie_suggerite && R.obbligatorie_suggerite.length ? '<p class="pic mu" style="margin:4px 0">Considero pertinenti gli annunci che contengono: <b>' + R.obbligatorie_suggerite.map(esc).join("</b> + <b>").replace(/\|/g, " o ") + '</b>. Solo questi entrano nella media.</p>' : "") +
+    '<ul class="lista-ann" id="lista-r"></ul>' +
+    (altri ? '<button class="btn" id="altri" style="margin-top:10px">' + testoAltri(false) + '</button>' : "") + '</div>';
+  $("#ris").innerHTML = h;
+  const dis = () => {
+    const tutti = ok.filter(s => filtro === "tutti" || s === filtro).flatMap(s => R.siti[s].annunci)
+      .filter(a => mostraAltri || pert(a)).sort((a,b) => (pert(b) - pert(a)) || (a.prezzo - b.prezzo));
+    $("#lista-r").innerHTML = tutti.length ? tutti.slice(0,100).map(a => rigaAnnuncio(a, media) .replace("<li>", pert(a) ? "<li>" : '<li style="opacity:.55">')).join("") : '<li class="mu">Nessun risultato pertinente.</li>';
+  };
+  dis();
+  if($("#altri")) $("#altri").onclick = () => { mostraAltri = !mostraAltri; $("#altri").textContent = testoAltri(mostraAltri); dis(); };
+  document.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { filtro = b.dataset.r; document.querySelectorAll("[data-r]").forEach(x => x.classList.toggle("att", x === b)); dis(); });
+  $("#segui").onclick = () => {
+    const usata = s => R.siti[s] && R.siti[s].ricerca_usata;
+    formProdotto({
+      id: null, nome: R.testo, ricerca: R.testo,
+      ricerca_vinted: usata("vinted") || R.testo, ricerca_amazon: usata("amazon") || R.testo,
+      obbligatorie: R.obbligatorie_suggerite || [R.testo], escludi: null,
+      siti: ORDINE.filter(s => R.siti[s] && R.siti[s].stato !== "non_configurato" && (R.siti[s].trovati || s === "vinted" || s === "amazon")),
+      soglia_pct: 5, avvisi_prezzo: "entrambi", avvisi_nuovi: "sempre", amazon_asin: [], attivo: true,
+      // Fascia di prezzo proposta attorno alla media: tiene fuori accessori e lotti.
+      prezzo_min: R.media && R.media.n >= 3 ? Math.floor(R.media.media * 0.4) : null,
+      prezzo_max: R.media && R.media.n >= 3 ? Math.ceil(R.media.media * 2.5) : null,
+    }, R.carte || []);
+  };
+}
+
+// ---------------------------------------------------------------- Modulo prodotto
+function formProdotto(p, carte=[]){
+  const nuovo = !p.id;
+  const cm = carte.filter(c => c.sito === "cardmarket"), ct = carte.filter(c => c.sito === "cardtrader");
+  const sceltaCarta = (lista, campo, attuale) => lista.length ? '<label>Carta esatta (' + (campo === "tcgdex_id" ? "Cardmarket" : "CardTrader") + ')</label><div class="carte">' +
+    lista.map((c,i) => '<label><input type="radio" name="' + campo + '" value="' + esc(c.id) + '"' + ((attuale ? attuale == c.id : i === 0) ? " checked" : "") + '> ' + (c.immagine ? '<img src="' + url(c.immagine) + '" alt="" loading="lazy">' : "") + '<div>' + esc(c.nome) + " " + esc(c.numero) + '</div><div class="mu">' + esc(c.espansione) + '</div></label>').join("") +
+    '<label><input type="radio" name="' + campo + '" value=""> Nessuna</label></div>' : "";
+  $("#dlg-corpo").innerHTML = '<h2 style="margin:0 0 6px;font-size:19px">' + (nuovo ? "Segui un prodotto" : "Modifica") + '</h2>' +
+    '<label for="f-nome">Nome</label><input id="f-nome" value="' + esc(p.nome) + '" maxlength="80">' +
+    '<label>Siti da controllare</label><div class="chk">' + ORDINE.map(s => '<label><input type="checkbox" name="fs" value="' + s + '"' + ((p.siti || ORDINE).includes(s) ? " checked" : "") + '> ' + SITI[s] + '</label>').join("") + '</div>' +
+    sceltaCarta(cm, "tcgdex_id", p.tcgdex_id) + sceltaCarta(ct, "cardtrader_id", p.cardtrader_id) +
+    (!cm.length && p.tcgdex_id ? '<p class="pic mu">Carta Cardmarket collegata: ' + esc(p.tcgdex_id) + '</p>' : "") +
+    (!ct.length && p.cardtrader_id ? '<p class="pic mu">Carta CardTrader collegata: ' + esc(p.cardtrader_id) + '</p>' : "") +
+    '<div class="griglia2"><div><label for="f-rv">Ricerca su Vinted</label><input id="f-rv" value="' + esc(p.ricerca_vinted || p.ricerca || "") + '"></div><div><label for="f-ra">Ricerca su Amazon</label><input id="f-ra" value="' + esc(p.ricerca_amazon || p.ricerca || "") + '"></div></div>' +
+    '<label for="f-ob">Parole che devono esserci nel titolo <span class="mu">(una per riga; «a|b» = basta una delle due)</span></label><textarea id="f-ob">' + esc((p.obbligatorie || []).join("\n")) + '</textarea>' +
+    '<label for="f-es">Parole da escludere <span class="mu">(una per riga)</span></label><textarea id="f-es">' + esc((p.escludi ?? ESCLUSE_PREDEFINITE).join("\n")) + '</textarea>' +
+    '<div class="griglia2"><div><label for="f-min">Prezzo minimo (€)</label><input id="f-min" type="number" min="0" step="0.01" inputmode="decimal" value="' + (p.prezzo_min ?? "") + '"></div><div><label for="f-max">Prezzo massimo (€)</label><input id="f-max" type="number" min="0" step="0.01" inputmode="decimal" value="' + (p.prezzo_max ?? "") + '"></div></div>' +
+    '<div class="griglia2"><div><label for="f-so">Avvisami se il prezzo cambia di almeno (%)</label><input id="f-so" type="number" min="0.1" max="100" step="0.5" value="' + (p.soglia_pct ?? 5) + '"></div>' +
+    '<div><label for="f-ap">Cambi di prezzo</label><select id="f-ap"><option value="entrambi">Ribassi e rialzi</option><option value="ribassi">Solo ribassi</option><option value="nessuno">Nessun avviso</option></select></div></div>' +
+    '<label for="f-an">Nuovi annunci</label><select id="f-an"><option value="sempre">Avvisami sempre (con confronto con la media)</option><option value="sotto_media">Solo se sotto la media</option><option value="mai">Non avvisarmi</option></select>' +
+    '<label for="f-az">Link Amazon da seguire con precisione <span class="mu">(facoltativo, uno per riga)</span></label><textarea id="f-az" placeholder="https://www.amazon.it/dp/…">' + esc((p.amazon_asin || []).map(a => "https://www.amazon.it/dp/" + a).join("\n")) + '</textarea>' +
+    (nuovo ? "" : '<div class="chk" style="margin-top:12px"><label><input type="checkbox" id="f-att"' + (p.attivo !== false ? " checked" : "") + '> Controlli attivi</label></div>');
+  $("#f-ap").value = p.avvisi_prezzo || "entrambi"; $("#f-an").value = p.avvisi_nuovi || "sempre";
+  $("#dlg-piede").innerHTML = (nuovo ? "" : '<button class="btn peric" id="d-del" style="margin-right:auto">Elimina</button>') + '<button class="btn" id="d-ann">Annulla</button><button class="btn pri" id="d-ok">' + (nuovo ? "⭐ Segui" : "Salva") + '</button>';
+  const dlg = $("#dlg"); dlg.showModal();
+  $("#d-ann").onclick = () => dlg.close();
+  const righe = id => $(id).value.split("\n").map(x => x.trim()).filter(Boolean);
+  const num = id => { const v = $(id).value.trim(); return v === "" ? null : Math.max(0, parseFloat(v.replace(",", "."))); };
+  $("#d-ok").onclick = async () => {
+    const nome = $("#f-nome").value.trim(); if(!nome) return toast("Scrivi un nome");
+    const siti = [...document.querySelectorAll("input[name=fs]:checked")].map(x => x.value);
+    if(!siti.length) return toast("Scegli almeno un sito");
+    const pmin = num("#f-min"), pmax = num("#f-max");
+    if(pmin != null && pmax != null && pmin > pmax) return toast("Il prezzo minimo è più alto del massimo");
+    const asin = righe("#f-az").map(l => { const m = l.match(/(?:\/dp\/|\/gp\/product\/)([A-Z0-9]{10})/i) || l.match(/^([A-Z0-9]{10})$/i); return m ? m[1].toUpperCase() : null; });
+    if(asin.includes(null)) return toast("Un link Amazon non è valido");
+    const radio = n => { const x = document.querySelector("input[name=" + n + "]:checked"); return x ? (x.value || null) : undefined; };
+    const dati = {...p, id: p.id || idProdotto(nome), nome, siti, ricerca: p.ricerca || nome,
+      ricerca_vinted: $("#f-rv").value.trim() || nome, ricerca_amazon: $("#f-ra").value.trim() || nome,
+      obbligatorie: righe("#f-ob"), escludi: righe("#f-es"), prezzo_min: pmin, prezzo_max: pmax,
+      soglia_pct: Math.min(100, Math.max(0.1, parseFloat($("#f-so").value) || 5)),
+      avvisi_prezzo: $("#f-ap").value, avvisi_nuovi: $("#f-an").value, amazon_asin: [...new Set(asin)],
+      attivo: nuovo ? true : $("#f-att").checked, aggiornato: new Date().toISOString()};
+    const tc = radio("tcgdex_id"), ct = radio("cardtrader_id");
+    if(tc !== undefined) dati.tcgdex_id = tc; if(ct !== undefined) dati.cardtrader_id = ct ? Number(ct) : null;
+    if(nuovo) dati.creato = dati.aggiornato;
+    $("#d-ok").disabled = true;
+    try{
+      await aggiorna("dati/prodotti.json", {prodotti:[]}, d => { d.prodotti = (d.prodotti || []).filter(x => x.id !== dati.id).concat([dati]); return d; }, (nuovo ? "segui: " : "modifica: ") + nome);
+      dlg.close(); toast(nuovo ? "Ora segui «" + nome + "». Il primo controllo arriva entro 30 minuti." : "Salvato");
+      await caricaTutto(); nuovo ? vai("seguiti") : vistaProdotto(dati.id);
+    }catch(e){ toast(e.message); $("#d-ok").disabled = false; }
+  };
+  if(!nuovo) $("#d-del").onclick = async () => {
+    if(!confirm("Smettere di seguire «" + p.nome + "»? Lo storico verrà eliminato.")) return;
+    try{
+      await aggiorna("dati/prodotti.json", {prodotti:[]}, d => { d.prodotti = (d.prodotti || []).filter(x => x.id !== p.id); return d; }, "elimina: " + p.nome);
+      const s = await leggi("dati/stato/" + p.id + ".json", null);
+      if(s.sha) await gh("contents/dati/stato/" + p.id + ".json", {method:"DELETE", headers:{"Content-Type":"application/json"}, body: JSON.stringify({message:"elimina storico", sha: s.sha})});
+      dlg.close(); toast("Eliminato"); await caricaTutto(); vai("seguiti");
+    }catch(e){ toast(e.message) }
+  };
+}
+
+// ---------------------------------------------------------------- Avvisi
+async function vistaAvvisi(){
+  $("#main").innerHTML = '<div class="vuoto"><span class="spin"></span></div>';
+  try{ S.eventi = ((await leggi("dati/eventi.json", {eventi:[]})).dati || {}).eventi || []; }catch(e){ $("#main").innerHTML = '<div class="avviso errore">' + esc(e.message) + '</div>'; return; }
+  if(!S.eventi.length){ $("#main").innerHTML = '<div class="card vuoto">🔔<p>Nessun avviso per ora.</p></div>'; return; }
+  const icona = {ribasso:"⬇️", rialzo:"⬆️", nuovo:"🆕", riassunto:"🆕", inizio:"👀"};
+  $("#main").innerHTML = S.eventi.slice(0,150).map(e => '<div class="card"><div class="riga"><div class="cresci"><p class="tit" style="font-size:15px">' + (icona[e.tipo] || "•") + " " + esc(e.prodotto) + '</p><div class="pic">' + esc(e.testo) + '</div>' +
+    (e.titolo ? '<div class="pic mu">' + (e.url ? '<a href="' + url(e.url) + '" target="_blank" rel="noopener">' + esc(e.titolo) + '</a>' : esc(e.titolo)) + '</div>' : "") + '</div>' +
+    '<div style="text-align:right"><div class="prezzo ' + (e.tipo === "ribasso" || (e.pct_media ?? 0) < 0 ? "giu" : e.tipo === "rialzo" ? "su" : "") + '">' + (e.prezzo != null ? euro(e.prezzo) : "") + '</div><div class="pic mu">' + tempoFa(e.quando) + '</div></div></div></div>').join("");
+}
+
+// ---------------------------------------------------------------- Impostazioni e notifiche
+async function vistaImpostazioni(){
+  const pcs = S.generale.computer || {};
+  const notif = "Notification" in window ? Notification.permission : "non_supportate";
+  const ios = /iphone|ipad/i.test(navigator.userAgent), standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  $("#main").innerHTML =
+    '<div class="card"><b>Notifiche su questo dispositivo</b><p class="pic mu" id="n-stato">' +
+      (notif === "granted" ? "✅ Attive" : notif === "denied" ? "❌ Bloccate: riattivale dalle impostazioni del browser per questo sito." : notif === "non_supportate" ? (ios && !standalone ? "Su iPhone aggiungi prima l'app alla schermata Home (Condividi → Aggiungi alla schermata Home), poi aprila da lì." : "Questo browser non supporta le notifiche.") : "Non ancora attive.") + '</p>' +
+      '<div class="riga" style="flex-wrap:wrap"><button class="btn pri" id="n-on"' + (notif === "non_supportate" || notif === "denied" ? " disabled" : "") + '>🔔 Attiva notifiche</button><button class="btn" id="n-prova">Invia una prova</button></div></div>' +
+    '<div class="card"><b>Computer</b>' + (Object.keys(pcs).length ? Object.entries(pcs).map(([n, x]) => { const ok = (Date.now() - new Date(x.battito))/60000 < 15; return '<div class="riga" style="margin-top:8px"><span class="pallino ' + (ok ? "ok" : "ko") + '"></span><span class="cresci">' + esc(n) + ((S.generale.turno||{}).pc === n && ok ? " <span class=\"badge ok\">di turno</span>" : "") + '</span><span class="pic mu">visto ' + tempoFa(x.battito) + '</span></div>'; }).join("") : '<p class="pic mu">Nessun computer si è ancora collegato.</p>') +
+    '<p class="pic mu" style="margin-bottom:0">Basta che uno dei due sia acceso: se quello di turno si spegne, dopo circa 12 minuti subentra l\'altro.</p></div>' +
+    '<div class="card"><b>Siti</b>' + ORDINE.map(s => { const e = (S.generale.siti || {})[s]; return '<div class="riga" style="margin-top:8px"><span class="cresci">' + SITI[s] + '</span><span class="badge ' + (!e ? "" : e.esito === "ok" ? "ok" : "ko") + '">' + (!e ? "non ancora usato" : e.esito === "ok" ? "ok" : e.esito) + '</span><span class="pic mu">' + (e ? tempoFa(e.quando) : "") + '</span></div>'; }).join("") + '</div>' +
+    '<div class="card"><b>Accesso</b><p class="pic mu">Progetto: ' + esc(accesso.progetto) + '</p><button class="btn peric" id="esci">Esci da questo dispositivo</button></div>';
+  $("#n-on").onclick = attivaNotifiche;
+  $("#n-prova").onclick = async () => { try{ await nuovaRichiesta({tipo:"prova_notifica"}); toast("Richiesta inviata: la notifica arriva entro un minuto se il PC è acceso."); }catch(e){ toast(e.message) } };
+  $("#esci").onclick = () => { if(confirm("Uscire? Dovrai reinserire la chiave GitHub.")){ mem.del("mp_token"); mem.del("mp_progetto"); location.reload(); } };
+}
+
+function urlB64(b){ const p = "=".repeat((4 - b.length % 4) % 4); const r = atob((b + p).replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from([...r].map(c => c.charCodeAt(0))); }
+async function attivaNotifiche(){
+  try{
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)) return toast("Notifiche non supportate su questo browser");
+    const perm = await Notification.requestPermission();
+    if(perm !== "granted") return toast("Permesso negato");
+    const {dati: pub} = await leggi("dati/config_pubblica.json", null);
+    if(!pub || !pub.chiave_push) return toast("Manca la chiave delle notifiche: avvia l'installazione sul PC.");
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(sub && sub.options && sub.options.applicationServerKey){
+      const k = new Uint8Array(sub.options.applicationServerKey), n = urlB64(pub.chiave_push);
+      if(k.length !== n.length || k.some((x,i) => x !== n[i])){ await sub.unsubscribe(); sub = null; }
+    }
+    sub = sub || await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: urlB64(pub.chiave_push)});
+    const j = sub.toJSON();
+    await aggiorna("dati/iscrizioni.json", {iscrizioni:[]}, d => { d.iscrizioni = (d.iscrizioni || []).filter(x => x.endpoint !== j.endpoint).concat([{endpoint: j.endpoint, keys: j.keys, dispositivo: navigator.userAgent.slice(0,120), quando: new Date().toISOString()}]); return d; }, "iscrizione notifiche");
+    toast("Notifiche attive su questo dispositivo ✅"); vistaImpostazioni();
+  }catch(e){ toast("Non riesco ad attivare le notifiche: " + e.message) }
+}
+
+// ---------------------------------------------------------------- Accesso
+function vistaAccesso(errore){
+  $("#nav").classList.add("nascosto");
+  $("#main").innerHTML = '<div class="card" style="max-width:460px;margin:20px auto"><h2 style="margin-top:0">Accedi</h2>' +
+    '<p class="pic mu">L\'app legge i tuoi dati dal progetto privato su GitHub. Inserisci la chiave una sola volta su ogni dispositivo: resta salvata qui.</p>' +
+    (errore ? '<div class="avviso errore">' + esc(errore) + '</div>' : "") +
+    '<form id="f-acc"><label for="a-pr">Progetto (utente/nome)</label><input id="a-pr" required placeholder="mario/monitor-prezzi-dati" value="' + esc(accesso.progetto || "") + '" autocapitalize="off" autocorrect="off" spellcheck="false">' +
+    '<label for="a-tk">Chiave GitHub</label><input id="a-tk" required type="password" placeholder="github_pat_…" autocomplete="off">' +
+    '<button class="btn pri" style="margin-top:14px;width:100%">Entra</button></form></div>';
+  $("#f-acc").onsubmit = async e => {
+    e.preventDefault();
+    accesso = {progetto: $("#a-pr").value.trim().replace(/^https:\/\/github\.com\//, "").replace(/\/$/, ""), token: $("#a-tk").value.trim()};
+    try{
+      const r = await gh("");
+      if(r.status === 404) throw new ErroreGH("Progetto non trovato, o la chiave non ha accesso a questo progetto.");
+      if(!r.ok) throw new ErroreGH("Accesso non riuscito (" + r.status + ").");
+      mem.set("mp_token", accesso.token); mem.set("mp_progetto", accesso.progetto);
+      avvio();
+    }catch(err){ vistaAccesso(err.message) }
+  };
+}
+
+// ---------------------------------------------------------------- Avvio
+async function avvio(){
+  if(!accesso.token || !accesso.progetto) return vistaAccesso();
+  try{
+    await caricaTutto();
+    $("#nav").classList.remove("nascosto");
+    const v = new URLSearchParams(location.search).get("vista");
+    vai(["seguiti","cerca","avvisi","impostazioni"].includes(v) ? v : "seguiti");
+    S.eventi = ((await leggi("dati/eventi.json", {eventi:[]})).dati || {}).eventi || [];
+  }catch(e){
+    if(String(e.message).includes("Chiave")) return vistaAccesso(e.message);
+    $("#main").innerHTML = '<div class="avviso errore">' + esc(e.message) + '</div><button class="btn" onclick="avvio()">Riprova</button>';
+  }
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => vai(b.dataset.v));
+// Aggiornamento automatico ogni 2 minuti quando l'app è in primo piano.
+setInterval(async () => {
+  if(document.hidden || !accesso.token || $("#dlg").open) return;
+  try{ await caricaTutto(); if(S.vista === "seguiti") vistaSeguiti(); }catch(e){}
+}, 120000);
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+avvio();
+</script>
+</body>
+</html>
