@@ -140,7 +140,8 @@ class ErroreGH extends Error {}
 async function gh(percorso, opz={}){
   let r;
   try{
-    r = await fetch(API + "/repos/" + accesso.progetto + "/" + percorso, {
+    // Niente barra finale: GitHub risponde 404 a ".../repos/utente/progetto/".
+    r = await fetch(API + "/repos/" + accesso.progetto + (percorso ? "/" + percorso : ""), {
       cache: "no-store", ...opz,
       headers: {"Authorization": "Bearer " + accesso.token, "Accept": "application/vnd.github+json", ...(opz.headers||{})},
     });
