@@ -13,7 +13,7 @@
 :root{--sf:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#5d6675;--br:#e3e6eb;--ac:#0f766e;--ac2:#0d9488;--gi:#15803d;--su:#b91c1c;--wa:#b45309;--r:14px}
 @media (prefers-color-scheme:dark){:root{--sf:#0e1116;--card:#171b22;--tx:#e8ebf0;--mu:#97a0ae;--br:#2a313c;--ac:#2dd4bf;--ac2:#14b8a6;--gi:#4ade80;--su:#f87171;--wa:#fbbf24}}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--sf);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;overscroll-behavior:none;touch-action:manipulation}
+html,body{margin:0;background:var(--sf);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;overflow-x:clip;overscroll-behavior:none;touch-action:manipulation}
 /* La pagina non deve mai scorrere di lato: tutto resta dentro la larghezza dello schermo. */
 main,.card,.riga,.cresci{min-width:0;max-width:100%}
 a{color:var(--ac)}
@@ -55,6 +55,16 @@ label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
 .lista-ann a.t{text-decoration:none;color:var(--tx)}.lista-ann a.t:hover{text-decoration:underline}.lista-ann .t{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:14px}
 .vuoto{text-align:center;color:var(--mu);padding:34px 10px}
 .cerca-box{display:flex;gap:8px}.cerca-box input{flex:1}
+.campo-cerca{position:relative;flex:1;min-width:0}
+#sugg{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:var(--card);border:1px solid var(--br);border-radius:12px;box-shadow:0 10px 30px #0004;list-style:none;margin:0;padding:4px 0;max-height:min(60vh,430px);overflow-y:auto;overscroll-behavior:contain}
+#sugg li.sez{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);padding:8px 12px 2px}
+#sugg li.voce{display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;min-height:44px}
+#sugg li.voce.att,#sugg li.voce:hover{background:var(--sf)}
+#sugg li.voce img{width:30px;height:42px;object-fit:cover;border-radius:4px;flex:none;background:var(--sf)}
+#sugg li.voce .ic{width:30px;text-align:center;flex:none;opacity:.7}
+#sugg li.voce .tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sugg li.voce .tx small{display:block;color:var(--mu);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+#sugg mark{background:none;color:var(--ac);font-weight:650}
 .spin{width:16px;height:16px;border:2px solid var(--br);border-top-color:var(--ac);border-radius:50%;animation:g 1s linear infinite;display:inline-block;vertical-align:-3px}
 @keyframes g{to{transform:rotate(360deg)}}
 .avviso{padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--wa) 12%,transparent);color:var(--tx);font-size:14px;margin-bottom:12px}
@@ -98,8 +108,8 @@ dialog .piede{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;bo
 // Impostazioni dell'app
 // ======================================================================
 const API = "https://api.github.com";
-const SITI = {cardtrader:"CardTrader", cardmarket:"Cardmarket", vinted:"Vinted", amazon:"Amazon"};
-const ORDINE = ["cardtrader","cardmarket","vinted","amazon"];
+const SITI = {cardtrader:"CardTrader", cardmarket:"Cardmarket", vinted:"Vinted", ebay:"eBay", amazon:"Amazon"};
+const ORDINE = ["cardtrader","cardmarket","vinted","ebay","amazon"];
 const ESCLUSE_PREDEFINITE = ["vuota","vuoto","solo scatola","proxy","replica","fake","falso","cover","custodia","skin","ricambi","non funzionante","guasto","rotto","per pezzi","cerco","compro"];
 
 // ======================================================================
@@ -118,7 +128,7 @@ let accesso = { token: mem.get("mp_token"), progetto: mem.get("mp_progetto") };
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 // Solo link http/https: un link "javascript:" in un annuncio non deve poter eseguire codice.
-const url = u => { try{ const x = new URL(String(u || ""), location.href); return /^https?:$/.test(x.protocol) ? esc(x.href) : "#"; }catch(e){ return "#"; } };
+const url = u => { if(!u) return "#"; try{ const x = new URL(String(u || ""), location.href); return /^https?:$/.test(x.protocol) ? esc(x.href) : "#"; }catch(e){ return "#"; } };
 const euro = v => v == null || isNaN(v) ? "—" : Number(v).toLocaleString("it-IT",{style:"currency",currency:"EUR"});
 const pct = v => v == null ? "" : (v>0?"+":"") + v.toFixed(0) + "%";
 function tempoFa(iso){
@@ -338,7 +348,7 @@ function rigaAnnuncio(a, media){
   const cm = ex.media_30g ? " · media 30 gg " + euro(ex.media_30g) : "";
   return '<li>' + (a.immagine ? '<img loading="lazy" src="' + url(a.immagine) + '" alt="">' : '<img alt="">') +
     '<div class="cresci"><a class="t" href="' + url(a.url) + '" target="_blank" rel="noopener">' + esc(a.titolo || "(senza titolo)") + '</a>' +
-    '<div class="pic mu">' + info + cm + (ex.commissione ? " · +" + euro(ex.commissione) + " protezione" : "") + '</div></div>' +
+    '<div class="pic mu">' + info + cm + (ex.commissione ? " · +" + euro(ex.commissione) + " protezione" : "") + (ex.spedizione === 0 ? " · spedizione gratis" : ex.spedizione ? " · +" + euro(ex.spedizione) + " spedizione" : "") + '</div></div>' +
     '<div style="text-align:right"><div class="prezzo">' + euro(a.prezzo) + '</div>' +
     (ex.prezzo_pieno ? '<div class="pic mu" style="text-decoration:line-through">' + euro(ex.prezzo_pieno) + '</div>' : "") +
     (d != null && Math.abs(d) >= 1 ? '<div class="pic ' + (d < 0 ? "giu" : "su") + '">' + pct(d) + ' vs media</div>' : "") + '</div></li>';
@@ -371,12 +381,15 @@ function vistaProdotto(id){
 function vistaCerca(){
   const R = S.ricerca;
   $("#main").innerHTML =
-    '<div class="card"><form class="cerca-box" id="f-cerca"><input id="q" type="search" enterkeyhint="search" placeholder="Es. Gengar TG06 Origine Perduta" value="' + esc(R ? R.testo : "") + '" required maxlength="120"><button class="btn pri" id="b-cerca">Cerca</button></form>' +
+    '<div class="card"><form class="cerca-box" id="f-cerca" autocomplete="off"><div class="campo-cerca"><input id="q" type="search" enterkeyhint="search" placeholder="Es. Gengar TG06 Origine Perduta" value="' + esc(R ? R.testo : "") + '" required maxlength="120" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sugg" aria-expanded="false"><ul id="sugg" class="nascosto" role="listbox"></ul></div><button class="btn pri" id="b-cerca">Cerca</button></form>' +
     '<div class="chk" style="margin-top:10px">' + ORDINE.map(s => '<label><input type="checkbox" name="s" value="' + s + '" checked> ' + SITI[s] + '</label>').join("") + '</div>' +
     '<p class="pic mu" style="margin:10px 0 0">La ricerca la esegue il tuo computer acceso: di solito serve circa un minuto.</p></div><div id="ris"></div>';
+  attivaSuggerimenti();
   $("#f-cerca").onsubmit = async ev => {
     ev.preventDefault();
+    chiudiSugg();
     const testo = $("#q").value.trim(); if(!testo) return;
+    ricordaRicerca(testo);
     const siti = [...document.querySelectorAll("input[name=s]:checked")].map(x => x.value);
     if(!siti.length) return toast("Scegli almeno un sito");
     $("#b-cerca").disabled = true;
@@ -424,15 +437,132 @@ function disegnaRisultati(){
     const usata = s => R.siti[s] && R.siti[s].ricerca_usata;
     formProdotto({
       id: null, nome: R.testo, ricerca: R.testo,
-      ricerca_vinted: usata("vinted") || R.testo, ricerca_amazon: usata("amazon") || R.testo,
+      ricerca_vinted: usata("vinted") || R.testo, ricerca_amazon: usata("amazon") || R.testo, ricerca_ebay: usata("ebay") || R.testo,
       obbligatorie: R.obbligatorie_suggerite || [R.testo], escludi: null,
-      siti: ORDINE.filter(s => R.siti[s] && R.siti[s].stato !== "non_configurato" && (R.siti[s].trovati || s === "vinted" || s === "amazon")),
+      siti: ORDINE.filter(s => R.siti[s] && R.siti[s].stato !== "non_configurato" && (R.siti[s].trovati || ["vinted", "ebay", "amazon"].includes(s))),
       soglia_pct: 5, avvisi_prezzo: "entrambi", avvisi_nuovi: "sempre", amazon_asin: [], attivo: true,
       // Fascia di prezzo proposta attorno alla media: tiene fuori accessori e lotti.
       prezzo_min: R.media && R.media.n >= 3 ? Math.floor(R.media.media * 0.4) : null,
       prezzo_max: R.media && R.media.n >= 3 ? Math.ceil(R.media.media * 2.5) : null,
     }, R.carte || []);
   };
+}
+
+// ---------------------------------------------------------------- Suggerimenti mentre scrivi
+// Fonti interrogate direttamente dal telefono, senza passare dal PC:
+// prodotti seguiti e ricerche recenti (su questo dispositivo), carte Pokémon da TCGdex,
+// suggerimenti di ricerca di Google Shopping per tutti gli altri prodotti.
+const norm = t => String(t || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const senzaZeri = t => t.replace(/^([a-z]*)0+(\d)/, "$1$2");
+const cacheTCG = {nomi: {}, esp: null};
+function ricordaRicerca(t){
+  let r = []; try{ r = JSON.parse(mem.get("mp_ricerche") || "[]"); }catch(e){}
+  r = [t, ...r.filter(x => norm(x) !== norm(t))].slice(0, 15);
+  mem.set("mp_ricerche", JSON.stringify(r));
+}
+function ricercheRecenti(){ try{ return JSON.parse(mem.get("mp_ricerche") || "[]"); }catch(e){ return []; } }
+function evidenzia(testo, q){
+  const parole = norm(q).split(" ").filter(w => w.length >= 2);
+  let h = esc(testo);
+  for(const w of parole){ h = h.replace(new RegExp("(" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig"), "<mark>$1</mark>"); }
+  return h;
+}
+async function carteTCG(q){
+  const parole = norm(q).split(" ").filter(Boolean);
+  const nome = parole.find(w => /^[a-z]{3,}$/.test(w));
+  if(!nome) return [];
+  const get = u => fetch("https://api.tcgdex.net/v2/it" + u).then(r => r.ok ? r.json() : []);
+  if(!cacheTCG.esp) cacheTCG.esp = get("/sets").then(l => Object.fromEntries(l.map(e => [e.id, e.name]))).catch(() => ({}));
+  if(!cacheTCG.nomi[nome]) cacheTCG.nomi[nome] = get("/cards?name=" + encodeURIComponent(nome)).catch(() => []);
+  const [elenco, esp] = await Promise.all([cacheTCG.nomi[nome], cacheTCG.esp]);
+  const altre = parole.filter(w => w !== nome);
+  return elenco.filter(c => !/^(A\d|B\d|P-A)/i.test(c.id) && !String(c.image || "").includes("/tcgp/")).map(c => {
+    const idEsp = c.id.slice(0, c.id.lastIndexOf("-")), nomeEsp = esp[idEsp] || "";
+    const testo = norm(c.name + " " + nomeEsp), numPieno = norm(c.localId).replace(/ /g, ""), num = senzaZeri(numPieno);
+    let punti = norm(c.name) === nome ? 2 : 0, manca = false;
+    for(const w of altre){
+      if(senzaZeri(w) === num) punti += 4;                                   // numero esatto (TG06 = TG6)
+      else if(numPieno.startsWith(w) || num.startsWith(senzaZeri(w))) punti += 3;  // numero ancora da finire ("tg0")
+      else if(testo.split(" ").some(x => x.startsWith(w))) punti += 1;      // parola del nome o dell'espansione
+      else manca = true;                                                     // parola scritta che la carta non ha
+    }
+    return {c, nomeEsp, punti, manca};
+  }).filter(x => !x.manca).sort((a, b) => b.punti - a.punti).slice(0, 6).map(({c, nomeEsp}) => ({
+    tipo: "carta", valore: (c.name + " " + c.localId + " " + nomeEsp).trim(),
+    titolo: c.name + " · " + c.localId, sotto: nomeEsp, img: c.image ? c.image + "/low.webp" : ""}));
+}
+function suggerimentiGoogle(q){
+  // Google risponde in formato "JSONP" (uno script): è l'unico modo per una pagina
+  // esterna di leggerlo senza blocchi del browser.
+  return new Promise(ok => {
+    const cb = "mp_g" + Math.random().toString(36).slice(2), s = document.createElement("script");
+    const fine = v => { clearTimeout(t); try{ delete window[cb]; }catch(e){} s.remove(); ok(v); };
+    const t = setTimeout(() => fine([]), 3000);
+    window[cb] = d => fine(((d && d[1]) || []).map(x => Array.isArray(x) ? x[0] : x)
+      .filter(x => typeof x === "string" && norm(x) !== norm(q) && !/\b(prezzo|prezzi|offert[ae]|amazon|unieuro|mediaworld|euronics|volantino|recensioni)\b/i.test(x))
+      .slice(0, 6).map(x => ({tipo: "google", valore: x, titolo: x})));
+    s.onerror = () => fine([]);
+    s.src = "https://suggestqueries.google.com/complete/search?client=youtube&ds=sh&hl=it&gl=it&q=" + encodeURIComponent(q) + "&callback=" + cb;
+    document.head.appendChild(s);
+  });
+}
+let suggTurno = 0, suggVoci = [], suggAttiva = -1, suggTimer = null;
+function chiudiSugg(){ const u = $("#sugg"); if(u){ u.classList.add("nascosto"); u.innerHTML = ""; } suggVoci = []; suggAttiva = -1; const q = $("#q"); if(q) q.setAttribute("aria-expanded", "false"); }
+function disegnaSugg(sezioni, q){
+  const u = $("#sugg"); if(!u) return;
+  suggVoci = []; let h = "";
+  for(const [titolo, voci] of sezioni){
+    if(!voci.length) continue;
+    h += '<li class="sez" role="presentation">' + esc(titolo) + '</li>';
+    for(const v of voci){
+      const i = suggVoci.push(v) - 1;
+      h += '<li class="voce" role="option" data-i="' + i + '">' +
+        (v.tipo === "carta" ? (v.img ? '<img src="' + url(v.img) + '" alt="" loading="lazy">' : '<span class="ic">🃏</span>') : '<span class="ic">' + ({seguito:"⭐", recente:"🕘", google:"🔍"}[v.tipo] || "") + '</span>') +
+        '<span class="tx">' + evidenzia(v.titolo, q) + (v.sotto ? '<small>' + esc(v.sotto) + '</small>' : "") + '</span></li>';
+    }
+  }
+  suggAttiva = -1;
+  if(!suggVoci.length){ chiudiSugg(); return; }
+  u.innerHTML = h; u.classList.remove("nascosto"); $("#q").setAttribute("aria-expanded", "true");
+  u.querySelectorAll("li.voce").forEach(li => {
+    // pointerdown: scatta prima che il campo perda il focus (così il tocco non va perso)
+    li.addEventListener("pointerdown", e => { e.preventDefault(); scegliSugg(+li.dataset.i); });
+  });
+}
+function scegliSugg(i){
+  const v = suggVoci[i]; if(!v) return;
+  chiudiSugg();
+  if(v.tipo === "seguito"){ vistaProdotto(v.id); return; }
+  $("#q").value = v.valore;
+  $("#f-cerca").requestSubmit();
+}
+async function aggiornaSugg(){
+  const q = $("#q").value.trim(), turno = ++suggTurno;
+  if(norm(q).length < 2){ chiudiSugg(); return; }
+  const n = norm(q);
+  const seguiti = S.prodotti.filter(p => norm(p.nome).includes(n)).slice(0, 4).map(p => ({tipo: "seguito", id: p.id, titolo: p.nome, sotto: "Già lo segui: apri la scheda"}));
+  const recenti = ricercheRecenti().filter(r => norm(r).includes(n) && norm(r) !== n).slice(0, 3).map(r => ({tipo: "recente", valore: r, titolo: r}));
+  disegnaSugg([["Prodotti che segui", seguiti], ["Ricerche recenti", recenti]], q);
+  if(n.length < 3) return;
+  const [carte, google] = await Promise.all([carteTCG(q).catch(() => []), suggerimentiGoogle(q)]);
+  if(turno !== suggTurno || document.activeElement !== $("#q")) return;   // risposta vecchia o campo lasciato
+  disegnaSugg([["Prodotti che segui", seguiti], ["Ricerche recenti", recenti], ["Carte Pokémon", carte], ["Suggerimenti", google]], q);
+}
+function attivaSuggerimenti(){
+  const q = $("#q");
+  q.addEventListener("input", () => { clearTimeout(suggTimer); suggTimer = setTimeout(aggiornaSugg, 250); });
+  q.addEventListener("focus", () => { if(q.value.trim()) aggiornaSugg(); });
+  q.addEventListener("blur", () => setTimeout(chiudiSugg, 150));
+  q.addEventListener("keydown", e => {
+    if(!suggVoci.length) return;
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      suggAttiva = (suggAttiva + (e.key === "ArrowDown" ? 1 : -1) + suggVoci.length) % suggVoci.length;
+      document.querySelectorAll("#sugg li.voce").forEach(li => li.classList.toggle("att", +li.dataset.i === suggAttiva));
+      const att = document.querySelector("#sugg li.voce.att"); if(att) att.scrollIntoView({block: "nearest"});
+    } else if(e.key === "Enter" && suggAttiva >= 0){ e.preventDefault(); scegliSugg(suggAttiva); }
+    else if(e.key === "Escape"){ chiudiSugg(); }
+  });
 }
 
 // ---------------------------------------------------------------- Modulo prodotto
@@ -449,6 +579,7 @@ function formProdotto(p, carte=[]){
     (!cm.length && p.tcgdex_id ? '<p class="pic mu">Carta Cardmarket collegata: ' + esc(p.tcgdex_id) + '</p>' : "") +
     (!ct.length && p.cardtrader_id ? '<p class="pic mu">Carta CardTrader collegata: ' + esc(p.cardtrader_id) + '</p>' : "") +
     '<div class="griglia2"><div><label for="f-rv">Ricerca su Vinted</label><input id="f-rv" value="' + esc(p.ricerca_vinted || p.ricerca || "") + '"></div><div><label for="f-ra">Ricerca su Amazon</label><input id="f-ra" value="' + esc(p.ricerca_amazon || p.ricerca || "") + '"></div></div>' +
+    '<label for="f-re">Ricerca su eBay</label><input id="f-re" value="' + esc(p.ricerca_ebay || p.ricerca || "") + '">' +
     '<label for="f-ob">Parole che devono esserci nel titolo <span class="mu">(una per riga; «a|b» = basta una delle due)</span></label><textarea id="f-ob">' + esc((p.obbligatorie || []).join("\n")) + '</textarea>' +
     '<label for="f-es">Parole da escludere <span class="mu">(una per riga)</span></label><textarea id="f-es">' + esc((p.escludi ?? ESCLUSE_PREDEFINITE).join("\n")) + '</textarea>' +
     '<div class="griglia2"><div><label for="f-min">Prezzo minimo (€)</label><input id="f-min" type="number" min="0" step="0.01" inputmode="decimal" value="' + (p.prezzo_min ?? "") + '"></div><div><label for="f-max">Prezzo massimo (€)</label><input id="f-max" type="number" min="0" step="0.01" inputmode="decimal" value="' + (p.prezzo_max ?? "") + '"></div></div>' +
@@ -473,7 +604,7 @@ function formProdotto(p, carte=[]){
     if(asin.includes(null)) return toast("Un link Amazon non è valido");
     const radio = n => { const x = document.querySelector("input[name=" + n + "]:checked"); return x ? (x.value || null) : undefined; };
     const dati = {...p, id: p.id || idProdotto(nome), nome, siti, ricerca: p.ricerca || nome,
-      ricerca_vinted: $("#f-rv").value.trim() || nome, ricerca_amazon: $("#f-ra").value.trim() || nome,
+      ricerca_vinted: $("#f-rv").value.trim() || nome, ricerca_amazon: $("#f-ra").value.trim() || nome, ricerca_ebay: $("#f-re").value.trim() || nome,
       obbligatorie: righe("#f-ob"), escludi: righe("#f-es"), prezzo_min: pmin, prezzo_max: pmax,
       soglia_pct: Math.min(100, Math.max(0.1, parseFloat($("#f-so").value) || 5)),
       avvisi_prezzo: $("#f-ap").value, avvisi_nuovi: $("#f-an").value, amazon_asin: [...new Set(asin)],
