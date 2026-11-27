@@ -1,5 +1,5 @@
 // Service worker: riceve le notifiche push e permette di installare l'app.
-const VERSIONE = "mp-3";
+const VERSIONE = "mp-5";
 self.addEventListener("install", e => { self.skipWaiting(); e.waitUntil(caches.open(VERSIONE).then(c => c.addAll(["./", "index.html", "icona-192.png"]))); });
 self.addEventListener("activate", e => e.waitUntil((async () => {
   for (const k of await caches.keys()) if (k !== VERSIONE) await caches.delete(k);
