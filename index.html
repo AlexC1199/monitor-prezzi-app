@@ -110,7 +110,7 @@ dialog .piede{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;bo
 const API = "https://api.github.com";
 const SITI = {cardtrader:"CardTrader", cardmarket:"Cardmarket", vinted:"Vinted", ebay:"eBay", amazon:"Amazon"};
 const ORDINE = ["cardtrader","cardmarket","vinted","ebay","amazon"];
-const ESCLUSE_PREDEFINITE = ["vuota","vuoto","solo scatola","proxy","replica","fake","falso","cover","custodia","skin","ricambi","non funzionante","guasto","rotto","per pezzi","cerco","compro"];
+const ESCLUSE_PREDEFINITE = ["vuota","vuoto","solo scatola","proxy","replica","fake","falso","cover","custodia","skin","ricambi","non funzionante","guasto","rotto","per pezzi","cerco","compro","psa","bgs","cgc","gradata","gradato","graded"];
 
 // ======================================================================
 // Memoria del dispositivo (protetta: in alcuni contesti localStorage non c'è)
@@ -265,7 +265,8 @@ function riepilogo(id){
   const annunci = Object.values(st.annunci || {});
   const attivi = annunci.filter(a => a.attivo).sort((a,b) => a.prezzo - b.prezzo);
   const media = mediaRobusta(annunci.filter(a => (a.ultima_vista||"") >= limite).map(a => a.prezzo));
-  return {attivi, media, minimo: attivi[0] || null, medie: st.medie || []};
+  const soglia = media && media.n >= 3 ? media.media / 3 : 0;
+  return {attivi, media, minimo: attivi.find(a => a.prezzo >= soglia) || null, medie: st.medie || []};
 }
 
 // ======================================================================
@@ -411,7 +412,9 @@ function disegnaRisultati(){
   const media = R.media && R.media.media;
   const ok = ORDINE.filter(s => R.siti[s] && R.siti[s].stato === "ok" && R.siti[s].trovati);
   const pert = a => a.pertinente !== false;   // risultati vecchi senza il campo: tutti pertinenti
-  const minimo = ok.flatMap(s => R.siti[s].annunci.filter(pert)).reduce((m, a) => Math.min(m, a.prezzo), Infinity);
+  // Più basso tra i prezzi credibili: un lotto a 5 € per una carta da 500 € non conta.
+  const soglia = R.media && R.media.affidabile ? R.media.media / 3 : 0;
+  const minimo = ok.flatMap(s => R.siti[s].annunci.filter(pert)).filter(a => a.prezzo >= soglia).reduce((m, a) => Math.min(m, a.prezzo), Infinity);
   const altri = ok.reduce((n, s) => n + R.siti[s].annunci.filter(a => !pert(a)).length, 0);
   let filtro = "tutti", mostraAltri = false;
   const testoAltri = aperto => aperto ? "Nascondi i risultati non pertinenti" : (altri === 1 ? "Mostra anche l'altro risultato (non pertinente)" : "Mostra anche gli altri " + altri + " risultati (non pertinenti)");
