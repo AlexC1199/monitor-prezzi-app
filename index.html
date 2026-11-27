@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Monitor prezzi</title>
 <meta name="theme-color" content="#0f766e">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,7 +13,9 @@
 :root{--sf:#f6f7f9;--card:#fff;--tx:#14181f;--mu:#5d6675;--br:#e3e6eb;--ac:#0f766e;--ac2:#0d9488;--gi:#15803d;--su:#b91c1c;--wa:#b45309;--r:14px}
 @media (prefers-color-scheme:dark){:root{--sf:#0e1116;--card:#171b22;--tx:#e8ebf0;--mu:#97a0ae;--br:#2a313c;--ac:#2dd4bf;--ac2:#14b8a6;--gi:#4ade80;--su:#f87171;--wa:#fbbf24}}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--sf);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--sf);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden;overscroll-behavior:none;touch-action:manipulation}
+/* La pagina non deve mai scorrere di lato: tutto resta dentro la larghezza dello schermo. */
+main,.card,.riga,.cresci{min-width:0;max-width:100%}
 a{color:var(--ac)}
 header{position:sticky;top:0;z-index:5;background:var(--sf);padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--br)}
 header h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
@@ -40,7 +42,8 @@ button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
 @media (prefers-color-scheme:dark){button.pri{color:#04201d}}
 button.peric{color:var(--su)}
 button:disabled{opacity:.55;cursor:default}
-input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:10px 11px;min-height:42px}
+/* 16px: sotto questa misura iPhone ingrandisce la pagina quando tocchi un campo */
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--tx);background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:10px 11px;min-height:42px}
 textarea{min-height:70px;resize:vertical}
 label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px}
 .griglia2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
